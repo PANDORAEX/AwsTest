@@ -1,0 +1,31 @@
+name: Upload to S3
+
+on: [push]
+
+jobs:
+  copy:
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: Show Environment
+      run: export
+
+    - name: Update packages
+      run: sudo apt-get update
+
+    - name: Install packages
+      run: sudo apt-get -y install awscli zip unzip
+
+    - name: Checkout source
+      uses: actions/checkout@v1
+
+    - name: Archive Source
+      run: cd ${GITHUB_WORKSPACE} &&  zip -r ${HOME}/source-${GITHUB_SHA}.zip ./ -x *.git*
+
+    - name: Transfer to S3
+      run: aws s3 cp ${HOME}/source-${GITHUB_SHA}.zip s3://${AWS_S3_BUCKET}/github.com/${GITHUB_REPOSITORY}/${GITHUB_REF}.zip --metadata github-actor=${GITHUB_ACTOR},github-sha=${GITHUB_SHA}
+      env:
+        AWS_ACCESS_KEY_ID: ${{secrets.AWS_ACCESS_KEY_ID}}
+        AWS_SECRET_ACCESS_KEY: ${{secrets.AWS_SECRET_ACCESS_KEY}}
+        AWS_DEFAULT_REGION: "ap-northeast-1"
+        AWS_S3_BUCKET: "githubrep"
